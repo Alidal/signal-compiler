@@ -1,5 +1,4 @@
 from tables import *
-from collections import namedtuple
 
 
 class Symbol:
@@ -11,13 +10,12 @@ class Symbol:
 
 
 class Lexeme:
-    __slots__ = ["value", "code"]
+    __slots__ = ["value", "code", "type"]
 
-    def __init__(self, value, code):
+    def __init__(self, value, code, _type=None):
         self.value = value
         self.code = code
-Symbol = namedtuple("value", "attr")
-Lexeme = namedtuple("value", "cpde")
+        self.type = _type
 
 
 class EOFException(Exception):
@@ -27,18 +25,13 @@ class EOFException(Exception):
 def get_symbol_attribute(char):
     if char in whitespaces:
         return 0
-    elif char in numbers:
+    elif char in digits or char in signs:
         return 1
     elif char in letters:
         return 2
     elif char == "(":
         return 3
-    elif char in delimiters + signs:
+    elif char in delimiters:
         return 4
     else:
         return 5
-
-
-# def get_lexeme_code(lexeme, lexeme_type):
-#     if lexeme_type == 1:
-#         return
