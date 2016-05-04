@@ -41,8 +41,8 @@ class LexicalAnalyzer:
     def pretty_print(self):
         print("\nLexical analyzer result:")
         analyzer_result = PrettyTable(["Value", "Code", "Row", "Column"])
-        for item in self.result:
-            analyzer_result.add_row(item)
+        for lexeme in self.result:
+            analyzer_result.add_row([lexeme.value, lexeme.code, lexeme.row, lexeme.column])
         print(analyzer_result)
 
         print("\nConstants table:")
@@ -71,11 +71,8 @@ class LexicalAnalyzer:
                     else:
                         symbol = self.cache
                         del self.cache
-                    lexeme = Lexeme()
+                    lexeme = Lexeme(row=self.row, column=self.column)
                     silent = False  # Flag for suppressing output of current lexeme
-                    # Get current lexeme position
-                    row = self.row
-                    column = self.column
 
                     while symbol.attr == 0:  # Whitespace
                         symbol = self.read_symbol(f)
@@ -130,6 +127,6 @@ class LexicalAnalyzer:
                         silent = True
 
                     if not silent:
-                        self.result.append([lexeme.value, lexeme.code, row, column])
+                        self.result.append(lexeme)
             except EOFException:
                 pass
