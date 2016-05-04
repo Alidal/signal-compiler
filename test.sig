@@ -7,5 +7,5 @@ VAR (* comments *)
 	var1, var2, var3, var4: SIGNAL, FLOAT, INTEGER, 1 .. 7;
 DEFFUNC 
 	add = a \ 5 , 6;
-PROCEDURE proc1 (param1, param2: BLOCKFLOAT, EXT);
+PROCEDURE proc1 (param1, param2: BLOCKFLOAT, EXT); 
 LINK lnk IN 12;

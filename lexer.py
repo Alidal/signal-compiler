@@ -8,6 +8,8 @@ class LexicalAnalyzer:
     identifiers = {}
     constants = {}
     errors = []
+    row = 1
+    column = 0
 
     def add_lexeme(self, lexeme, lexeme_type):
         table = getattr(self, "%ss" % lexeme_type)
@@ -20,63 +22,70 @@ class LexicalAnalyzer:
                 table[lexeme.value] = shift + len(table)
 
             setattr(self, "%ss" % lexeme_type, table)
-        return table[lexeme.value] if not isinstance(table[lexeme.value], tuple) else table[lexeme.value][0]
+        return table[lexeme.value] if not isinstance(table[lexeme.value], tuple)\
+                                   else table[lexeme.value][0]
 
     def read_symbol(self, f):
         # Read file symbol by symbol (and automatically lowercase)
         char = f.read(1).lower()
+        if char == '\n':
+            self.row += 1
+            self.column = 1
+        else:
+            self.column += 1
         print(char, end="")
         if not char:
             raise EOFException
         return Symbol(char, get_symbol_attribute(char))
 
-    def prerry_print(self):
-        const = PrettyTable(["Value", "Code", "Type"])
-        for key, data in self.constants.items():
-            const.add_row([key, data[0], data[1]])
-        const.sort_key("Code")
-        print(const)
+    def pretty_print(self):
+        print("\nLexical analyzer result:")
+        analyzer_result = PrettyTable(["Value", "Code", "Row", "Column"])
+        for item in self.result:
+            analyzer_result.add_row(item)
+        print(analyzer_result)
 
+        print("\nConstants table:")
+        const = PrettyTable(["Value", "Code"])
+        for key, data in self.constants.items():
+            const.add_row([key, data[0]])
+        const.sort_key("Code")
+        print(const.get_string(sortby="Code"))
+
+        print("\nIdentifiers table:")
         ident = PrettyTable(["Name", "Code"])
         for key, data in self.identifiers.items():
             ident.add_row([key, data])
-        ident.sort_key("Code")
-        print(ident)
+        print(ident.get_string(sortby="Code"))
 
-        print(self.errors)
+        for error in self.errors:
+            print(error)
 
     def __init__(self, *args, **kwargs):
-        read_flag = True
-        res = []
+        self.result = []
         with open("test.sig") as f:
             try:
                 while True:
-                    if read_flag:
-                        # Read new word (problem with double delimiter)
+                    if not hasattr(self, 'cache'):
                         symbol = self.read_symbol(f)
                     else:
                         symbol = self.cache
                         del self.cache
-                    read_flag = True
-                    lexeme = Lexeme("", 0)
-                    silent = False
+                    lexeme = Lexeme()
+                    silent = False  # Flag for suppressing output of current lexeme
+                    # Get current lexeme position
+                    row = self.row
+                    column = self.column
 
-                    while symbol.attr == 0:  # Whitespaces
+                    while symbol.attr == 0:  # Whitespace
                         symbol = self.read_symbol(f)
 
                     if symbol.attr == 1:  # Constant
                         while symbol.attr == 1:
                             lexeme.value += symbol.value
                             symbol = self.read_symbol(f)
-
-                        if "#" in lexeme.value:
-                            lexeme.type = "FLOAT"
-                            lexeme.value = float(lexeme.value.replace("#", "e"))
-                        elif "\'" in lexeme.value:
-                            lexeme.type = "COMPLEX"
-                            lexeme.value = lexeme.value[1:-1]
-                        else:
-                            lexeme.type = "INTEGER"
+                        self.cache = symbol
+                        lexeme.type = "INTEGER"
                         lexeme.code = self.add_lexeme(lexeme, "constant")
 
                     elif symbol.attr == 2:  # Identifier
@@ -86,13 +95,16 @@ class LexicalAnalyzer:
                         if lexeme.value not in keywords_table:
                             lexeme.code = self.add_lexeme(lexeme, 'identifier')
                         else:
-                            silent = True
+                            lexeme.code = keywords_table[lexeme.value]
+                        self.cache = symbol
 
                     elif symbol.attr == 3:  # Comment
                         try:
                             second_symbol = self.read_symbol(f)
                             if second_symbol.value != '*':
-                                lexeme.code = ord('(')
+                                lexeme.value = '('
+                                lexeme.code = delimiters['(']
+                                self.cache = second_symbol
                             else:
                                 silent = True
                                 while symbol.value != ')':
@@ -101,9 +113,8 @@ class LexicalAnalyzer:
                                     symbol = self.read_symbol(f)
                         except EOFException:
                             self.errors.append("Expected *) but end of file was found")
-                            pass
 
-                    elif symbol.attr == 4:  # Delimiter (simple)
+                    elif symbol.attr == 4:  # Delimiter
                         # Check for double delimiter
                         second_symbol = self.read_symbol(f)
                         dd = symbol.value + second_symbol.value
@@ -111,7 +122,6 @@ class LexicalAnalyzer:
                             lexeme.code = double_delimiters[dd]
                             lexeme.value = dd
                         else:
-                            read_flag = False
                             lexeme.code = single_delimiters[symbol.value]
                             lexeme.value = symbol.value
                             self.cache = second_symbol
@@ -120,12 +130,6 @@ class LexicalAnalyzer:
                         silent = True
 
                     if not silent:
-                        res.append(lexeme.code)
+                        self.result.append([lexeme.value, lexeme.code, row, column])
             except EOFException:
                 pass
-        print(res)
-
-
-if __name__ == '__main__':
-    la = LexicalAnalyzer()
-    la.prerry_print()

@@ -10,12 +10,14 @@ class Symbol:
 
 
 class Lexeme:
-    __slots__ = ["value", "code", "type"]
+    __slots__ = ["value", "code", "type", "column", "row"]
 
-    def __init__(self, value, code, _type=None):
+    def __init__(self, value="", code=0, _type=None):
         self.value = value
         self.code = code
         self.type = _type
+        self.column = 0
+        self.row = 0
 
 
 class EOFException(Exception):

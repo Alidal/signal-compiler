@@ -10,6 +10,8 @@ single_delimiters = {
     '$': ord('$'),
     '(': ord('('),
     ')': ord(')'),
+    '#': ord('#'),
+    '\'': ord('\''),
     '\\': ord('\\'),
 }
 double_delimiters = {
@@ -18,7 +20,7 @@ double_delimiters = {
 }
 delimiters = single_delimiters
 delimiters.update(double_delimiters)
-signs = "\'+-#"
+signs = "+-"
 whitespaces = [' ', '\n', '\t', '\r', '\f']
 keywords_table = {
     'program': 401,
