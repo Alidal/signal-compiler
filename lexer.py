@@ -1,7 +1,7 @@
 from prettytable import PrettyTable
 
 from tables import *
-from utils import get_symbol_attribute, Symbol, Lexeme, EOFException
+from utils import get_symbol_attribute, Symbol, Lexeme, Error, EOFException
 
 
 class LexicalAnalyzer:
@@ -24,6 +24,10 @@ class LexicalAnalyzer:
             setattr(self, "%ss" % lexeme_type, table)
         return table[lexeme.value] if not isinstance(table[lexeme.value], tuple)\
                                    else table[lexeme.value][0]
+
+    def add_error(self, text):
+        error = Error(text, "Lexical", self.row, self.column)
+        self.errors.append(error)
 
     def read_symbol(self, f):
         # Read file symbol by symbol (and automatically lowercase)
@@ -61,7 +65,7 @@ class LexicalAnalyzer:
         for error in self.errors:
             print(error)
 
-    def __init__(self, *args, **kwargs):
+    def analyze(self, *args, **kwargs):
         self.result = []
         with open("test.sig") as f:
             try:
@@ -109,7 +113,7 @@ class LexicalAnalyzer:
                                         symbol = self.read_symbol(f)
                                     symbol = self.read_symbol(f)
                         except EOFException:
-                            self.errors.append("Expected *) but end of file was found")
+                            self.add_error("Expected *) but end of file was found")
 
                     elif symbol.attr == 4:  # Delimiter
                         # Check for double delimiter
@@ -122,8 +126,8 @@ class LexicalAnalyzer:
                             lexeme.code = single_delimiters[symbol.value]
                             lexeme.value = symbol.value
                             self.cache = second_symbol
-                    if symbol.attr == 5:  # Error
-                        self.errors.append("Wrong symbol: %s" % symbol.value)
+                    elif symbol.attr == 5:  # Error
+                        self.add_error("Wrong symbol: %s" % symbol.value)
                         silent = True
 
                     if not silent:
