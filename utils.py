@@ -19,6 +19,9 @@ class Lexeme:
         self.column = column
         self.row = row
 
+    def __eq__(self, lexeme):
+        return self.value == lexeme
+
 
 class Error:
     __slots__ = ["text", "row", "column", "type"]
@@ -37,6 +40,9 @@ class Error:
 
 
 class EOFException(Exception):
+    pass
+
+class SyntaxAnalizerError(Exception):
     pass
 
 

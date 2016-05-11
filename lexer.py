@@ -1,6 +1,5 @@
 from prettytable import PrettyTable
-
-from tables import *
+from tables import keywords_table, delimiters, single_delimiters, double_delimiters
 from utils import get_symbol_attribute, Symbol, Lexeme, Error, EOFException
 
 
