@@ -28,12 +28,14 @@ class SyntaxAnalyzer:
             self.scan()
             self.procedure_identifier()
             if self.cur_lexeme == ";":
+                self.scan()
                 self.block()
         elif self.cur_lexeme == "procedure":
             self.scan()
             self.procedure_identifier()
             self.parameters_list()
             if self.cur_lexeme == ";":
+                self.scan()
                 self.block()
         else:
             self.error("Expected PROGRAM or PROCEDURE keyword")
@@ -50,15 +52,26 @@ class SyntaxAnalyzer:
     def declarations(self):
         self.scan()
         self.constants_declarations()
-        self.scan()
         self.variable_declarations()
-        self.scan()
         self.math_function_declarations()
-        self.scan()
         self.procedure_declarations()
 
     def constant_declarations(self):
         if self.lexeme != "const":
-            self.error("Expected CONST keyword")
+            self.scan()
+            return
         self.scan()
         self.constant_declarations_list()
+
+    def constant_declarations_list(self):
+        self.constant_declaration()
+        self.constant_declarations_list()
+
+    def constant_declaration(self):
+        self.constant_identifier()
+        if self.lexeme != "=":
+            self.error("Expected '='")
+        self.constant()
+        if self.lexeme != ";":
+            self.error("Expected ';'")
+

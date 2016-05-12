@@ -1,4 +1,4 @@
-from tables import whitespaces, digits, signs, letters, delimiters
+from tables import whitespaces, digits, letters, delimiters
 
 
 class Symbol:
@@ -42,6 +42,7 @@ class Error:
 class EOFException(Exception):
     pass
 
+
 class SyntaxAnalizerError(Exception):
     pass
 
@@ -49,9 +50,9 @@ class SyntaxAnalizerError(Exception):
 def get_symbol_attribute(char):
     if char in whitespaces:
         return 0
-    elif char in digits or char in signs:
+    elif char in digits:
         return 1
-    elif char in letters:
+    elif char in letters or char == '$':
         return 2
     elif char == "(":
         return 3

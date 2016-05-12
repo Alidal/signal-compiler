@@ -7,7 +7,6 @@ single_delimiters = {
     ':': ord(':'),
     '=': ord('='),
     '-': ord('-'),
-    '$': ord('$'),
     '(': ord('('),
     ')': ord(')'),
     '#': ord('#'),
@@ -20,7 +19,6 @@ double_delimiters = {
 }
 delimiters = single_delimiters
 delimiters.update(double_delimiters)
-signs = "+-"
 whitespaces = [' ', '\n', '\t', '\r', '\f']
 keywords_table = {
     'program': 401,
@@ -39,5 +37,5 @@ keywords_table = {
     'link': 414,
     'in': 415,
     'out': 416,
-    'exp': 417,
+    '$exp': 417,
 }
