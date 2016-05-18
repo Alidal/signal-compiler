@@ -15,10 +15,7 @@ class LexicalAnalyzer:
 
         if lexeme.value not in table:
             shift = 501 if lexeme_type == "constant" else 1001
-            if lexeme.type:
-                table[lexeme.value] = (shift + len(table), lexeme.type)
-            else:
-                table[lexeme.value] = shift + len(table)
+            table[lexeme.value] = shift + len(table)
 
             setattr(self, "%ss" % lexeme_type, table)
         return table[lexeme.value] if not isinstance(table[lexeme.value], tuple)\
@@ -51,7 +48,7 @@ class LexicalAnalyzer:
         print("\nConstants table:")
         const = PrettyTable(["Value", "Code"])
         for key, data in self.constants.items():
-            const.add_row([key, data[0]])
+            const.add_row([key, data])
         const.sort_key("Code")
         print(const.get_string(sortby="Code"))
 
@@ -85,7 +82,6 @@ class LexicalAnalyzer:
                             lexeme.value += symbol.value
                             symbol = self.read_symbol(f)
                         self.cache = symbol
-                        lexeme.type = "INTEGER"
                         lexeme.code = self.add_lexeme(lexeme, "constant")
 
                     elif symbol.attr == 2:  # Identifier

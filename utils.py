@@ -50,13 +50,6 @@ class SyntaxAnalizerError(BaseException):
     pass
 
 
-def syntax_tree_node(func):
-    def wrapper(*args, **kwargs):
-        self = args[0]
-        # TODO
-        return result
-    return wrapper
-
 def get_symbol_attribute(char):
     if char in whitespaces:
         return 0
