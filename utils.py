@@ -22,6 +22,9 @@ class Lexeme:
     def __eq__(self, lexeme):
         return self.value == lexeme
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Error:
     __slots__ = ["text", "row", "column", "type"]
@@ -39,13 +42,20 @@ class Error:
                                               self.text)
 
 
-class EOFException(Exception):
+class EOFException(BaseException):
     pass
 
 
-class SyntaxAnalizerError(Exception):
+class SyntaxAnalizerError(BaseException):
     pass
 
+
+def syntax_tree_node(func):
+    def wrapper(*args, **kwargs):
+        self = args[0]
+        # TODO
+        return result
+    return wrapper
 
 def get_symbol_attribute(char):
     if char in whitespaces:
