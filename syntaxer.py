@@ -7,6 +7,7 @@ def syntax_tree_node(func, self):
     def wrapper(*args, **kwargs):
         if 'scan' not in kwargs or kwargs['scan']:
             # Read new lexeme
+            self.saved_lexeme = getattr(self, 'lexeme', "")
             self.lexeme = self.lexemas.pop(0)
         else:
             del kwargs['scan']
@@ -14,20 +15,21 @@ def syntax_tree_node(func, self):
         node_name = func.__name__
         node_id = str(uuid.uuid1())
         if not self.branch:
-            self.tree.create_node(node_name, node_id)
+            self.tree.create_node(node_name, node_id, data=self.lexeme)
         else:
-            self.tree.create_node(node_name, node_id, parent=self.branch[-1])
+            self.tree.create_node(node_name, node_id, parent=self.branch[-1], data=self.lexeme)
         self.branch.append(node_id)
         # Call function
         result = func(*args, **kwargs)
-        # Gone one level up
-        last_id = self.branch.pop()
+        # Go one level up
+        self.branch.pop()
         # <empty>
         if result == "<empty>":
             self.lexemas.insert(0, self.lexeme)
-            self.tree.remove_node(last_id)
+            self.lexeme = self.saved_lexeme
+            self.tree.create_node(result, str(uuid.uuid1()), parent=node_id)
         elif result is not None:
-            self.tree.create_node(result, result, parent=self.branch[-1])
+            self.tree.create_node(result, str(uuid.uuid1()), parent=node_id)
         return result
     return wrapper
 
@@ -44,6 +46,7 @@ class SyntaxAnalyzer:
 
     def error(self, text):
         error = Error(text, "Syntax", self.lexeme.row, self.lexeme.column)
+        self.tree.create_node(str(error), str(uuid.uuid1()), parent=self.branch[-1])
         self.errors.append(error)
         raise SyntaxAnalizerError
 
@@ -91,7 +94,7 @@ class SyntaxAnalyzer:
         self.constant_declarations(scan=False)
         self.variable_declarations()
         self.math_function_declarations()
-        self.procedure_declarations()
+        self.procedure_declaration()
 
     def constant_declarations(self):
         if self.lexeme != "const":
@@ -103,7 +106,7 @@ class SyntaxAnalyzer:
             self.constant_declaration(scan=False)
         else:
             return "<empty>"
-        while self.lexemas[0] == "=":
+        while self.lexemas[1] == "=":
             self.constant_declarations_list()
 
     def constant_declaration(self):
@@ -114,9 +117,9 @@ class SyntaxAnalyzer:
 
     def constant(self):
         if self.lexeme == '\'':
-            self.complex_constant()
+            self.complex_constant(scan=False)
         else:
-            # Remember about '-'
+            self.sign(scan=False)
             self.unsigned_constant()
 
     def variable_declarations(self):
@@ -126,17 +129,34 @@ class SyntaxAnalyzer:
             return "<empty>"
 
     def declarations_list(self):
-        if self.lexemas[1] == ':':
-            self.declaration()
+        if self.lexemas[0] == ',':
+            self.declaration(scan=False)
             self.declarations_list()
         else:
             return "<empty>"
 
     def declaration(self):
         self.variable_identifier(scan=False)
-        self.identifiers_list()
+        self.identifiers_list(scan=False)
         self.expect(":")
         self.attribute()
+        self.attributes_list()
+
+    def identifiers_list(self):
+        if self.lexeme == ',':
+            self.expect(',')
+            self.variable_identifier()
+            self.identifiers_list(scan=False)
+        else:
+            return
+
+    def attributes_list(self):
+        import ipdb; ipdb.set_trace()
+        possible_types = ['signal', 'complex', 'integer',
+                          'float', 'blockfloat', 'ext']
+        if self.lexemas[0].value not in possible_types:
+            return "<empty>"
+        self.attribute(scan=False)
         self.attributes_list()
 
     def attribute(self):
@@ -147,8 +167,10 @@ class SyntaxAnalyzer:
             self.range()
             self.ranges_list()
             self.expect("]")
-        if self.lexeme.value not in possible_types:
+        elif self.lexeme.value not in possible_types:
             self.error("Wrong variable type!")
+        self.lexeme = self.lexemas.pop(0)
+        return self.lexeme
 
     def ranges_list(self):
         if self.lexeme != ",":
@@ -157,11 +179,11 @@ class SyntaxAnalyzer:
         self.ranges_list()
 
     def range(self):
-        self.unsigned_integer()
+        self.unsigned_integer(scan=False)
         self.expect("..")
         self.unsigned_integer()
 
-    def math_function_declaration(self):
+    def math_function_declarations(self):
         if self.lexeme == "deffun":
             self.function_list()
         else:
@@ -190,7 +212,7 @@ class SyntaxAnalyzer:
     def procedure_declaration(self):
         if self.lexeme == "procedure":
             self.procedure(scan=False)
-            self.procedure_declarations()
+            self.procedure_declaration()
         else:
             return "<empty>"
 
@@ -228,7 +250,7 @@ class SyntaxAnalyzer:
         self.lexeme = self.lexemas.pop(0)
 
     def unsigned_constant(self):
-        self.unsigned_number()
+        self.unsigned_number(scan=False)
 
     def complex_number(self):
         self.left_part()
@@ -267,8 +289,8 @@ class SyntaxAnalyzer:
         self.unsigned_integer(scan=False)
 
     def fractional_part(self):
-        if self.lexeme == "#":
-            self.sign()
+        if self.saved_lexeme == "#":
+            self.sign(scan=False)
             self.unsigned_integer()
         else:
             return "<empty>"
@@ -279,5 +301,7 @@ class SyntaxAnalyzer:
         return result
 
     def sign(self):
-        if self.lexeme != '-' or self.lexeme != '+':
-            self.error("Expected '-' or '+'")
+        if self.lexeme != '-' and self.lexeme != '+':
+            return "<empty>"
+        result = self.lexeme.value
+        return result

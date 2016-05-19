@@ -25,6 +25,9 @@ class Lexeme:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __repr__(self):
+        return self.value
+
 
 class Error:
     __slots__ = ["text", "row", "column", "type"]
