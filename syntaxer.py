@@ -9,6 +9,8 @@ def syntax_tree_node(func, self):
             # Read new lexeme
             self.saved_lexeme = getattr(self, 'lexeme', "")
             self.lexeme = self.lexemas.pop(0)
+            if self.lexeme == ";":
+                self.lexeme = self.lexemas.pop(0)
         else:
             del kwargs['scan']
         # Add node to syntax tree
@@ -27,7 +29,8 @@ def syntax_tree_node(func, self):
         if result == "<empty>":
             self.lexemas.insert(0, self.lexeme)
             self.lexeme = self.saved_lexeme
-            self.tree.create_node(result, str(uuid.uuid1()), parent=node_id)
+            self.tree.remove_node(node_id)
+            # self.tree.create_node(result, str(uuid.uuid1()), parent=node_id)
         elif result is not None:
             self.tree.create_node(result, str(uuid.uuid1()), parent=node_id)
         return result
@@ -44,20 +47,28 @@ class SyntaxAnalyzer:
         self.branch = []
         self.errors = []
 
+    def pretty_print(self):
+        print("\nSyntax analyzer result:")
+        self.tree.show(reverse=True, line_type="ascii-exr")
+        for error in self.errors:
+            print(error)
+
     def error(self, text):
         error = Error(text, "Syntax", self.lexeme.row, self.lexeme.column)
         self.tree.create_node(str(error), str(uuid.uuid1()), parent=self.branch[-1])
         self.errors.append(error)
         raise SyntaxAnalizerError
 
-    def expect(self, keyword):
+    def expect(self, keyword, scan=False):
+        if scan:
+            self.lexeme = self.lexemas.pop(0)
         if self.lexeme != keyword:
             self.error("Expected %s" % keyword.upper())
 
     def __getattribute__(self, name):
         # Decorate every class method
         obj = object.__getattribute__(self, name)
-        excluded_methods = ['error', 'analyze', 'expect']
+        excluded_methods = ['error', 'analyze', 'expect', 'pretty_print']
         if callable(obj) and obj.__name__ not in excluded_methods:
             return syntax_tree_node(obj, self)
         else:
@@ -74,7 +85,7 @@ class SyntaxAnalyzer:
             self.procedure_identifier()
             self.expect(";")
             self.block()
-            self.expect(".")
+            self.expect(".", scan=True)
         elif self.lexeme == "procedure":
             self.procedure_identifier()
             self.parameters_list()
@@ -88,13 +99,14 @@ class SyntaxAnalyzer:
         self.declarations(scan=False)
         self.expect("begin")
         self.statements_list()
-        self.expect("end")
+        self.expect("end", scan=True)
 
     def declarations(self):
         self.constant_declarations(scan=False)
         self.variable_declarations()
         self.math_function_declarations()
         self.procedure_declaration()
+        self.lexeme = self.lexemas.pop(0)
 
     def constant_declarations(self):
         if self.lexeme != "const":
@@ -151,12 +163,11 @@ class SyntaxAnalyzer:
             return
 
     def attributes_list(self):
-        import ipdb; ipdb.set_trace()
         possible_types = ['signal', 'complex', 'integer',
-                          'float', 'blockfloat', 'ext']
+                          'float', 'blockfloat', 'ext', '[']
         if self.lexemas[0].value not in possible_types:
             return "<empty>"
-        self.attribute(scan=False)
+        self.attribute()
         self.attributes_list()
 
     def attribute(self):
@@ -169,8 +180,8 @@ class SyntaxAnalyzer:
             self.expect("]")
         elif self.lexeme.value not in possible_types:
             self.error("Wrong variable type!")
-        self.lexeme = self.lexemas.pop(0)
-        return self.lexeme
+        else:
+            return self.lexeme.value
 
     def ranges_list(self):
         if self.lexeme != ",":
@@ -184,7 +195,7 @@ class SyntaxAnalyzer:
         self.unsigned_integer()
 
     def math_function_declarations(self):
-        if self.lexeme == "deffun":
+        if self.lexeme == "deffunc":
             self.function_list()
         else:
             return "<empty>"
@@ -219,13 +230,14 @@ class SyntaxAnalyzer:
     def procedure(self):
         self.expect("procedure")
         self.procedure_identifier()
-        self.parameters_list()
+        self.parameters_list(scan=False)
         self.expect(";")
 
     def parameters_list(self):
         if self.lexeme == "(":
             self.declarations_list()
-            self.expect(")")
+            self.expect(")", scan=True)
+            self.lexeme = self.lexemas.pop(0)
         else:
             return "<empty>"
 
@@ -238,9 +250,10 @@ class SyntaxAnalyzer:
 
     def statement(self):
         self.expect("link")
+        self.variable_identifier()
         if self.lexeme == "in" or self.lexeme == "out":
             self.lexeme = self.lexemas.pop(0)
-        self.variable_identifier()
+        self.unsigned_integer(scan=False)
         self.expect(";")
 
     def complex_constant(self):
@@ -257,11 +270,12 @@ class SyntaxAnalyzer:
         self.right_part()
 
     def left_part(self):
-        # No <expression> in grammatic
-        return
+        self.expression(scan=False)
 
     def right_part(self):
-        # No <expression> in grammatic
+        self.expression(scan=False)
+
+    def expression(self):
         return
 
     def constant_identifier(self):
