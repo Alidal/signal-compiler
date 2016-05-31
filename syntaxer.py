@@ -253,9 +253,8 @@ class SyntaxAnalyzer:
     def statement(self):
         self.expect("link")
         self.variable_identifier()
-        if self.lexeme == "in" or self.lexeme == "out":
-            self.lexeme = self.lexemas.pop(0)
-        self.unsigned_integer(scan=False)
+
+        self.unsigned_integer()
         self.expect(";")
 
     def complex_constant(self):
