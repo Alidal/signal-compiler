@@ -1,6 +1,7 @@
 import uuid
 from utils import Error, SyntaxAnalizerError
 from treelib import Tree
+from tables import keywords_table
 
 
 def syntax_tree_node(func, self):
@@ -16,10 +17,14 @@ def syntax_tree_node(func, self):
         # Add node to syntax tree
         node_name = func.__name__
         node_id = str(uuid.uuid1())
+        if self.lexeme.value in keywords_table:
+            node_name += " (%s)" % self.lexeme.value.upper()
+
         if not self.branch:
             self.tree.create_node(node_name, node_id, data=self.lexeme)
         else:
             self.tree.create_node(node_name, node_id, parent=self.branch[-1], data=self.lexeme)
+
         self.branch.append(node_id)
         # Call function
         result = func(*args, **kwargs)
@@ -30,9 +35,8 @@ def syntax_tree_node(func, self):
             self.lexemas.insert(0, self.lexeme)
             self.lexeme = self.saved_lexeme
             self.tree.remove_node(node_id)
-            # self.tree.create_node(result, str(uuid.uuid1()), parent=node_id)
         elif result is not None:
-            self.tree.create_node(result, str(uuid.uuid1()), parent=node_id)
+            self.tree.create_node(result, str(uuid.uuid1()), parent=node_id, data=result)
         return result
     return wrapper
 
@@ -49,7 +53,7 @@ class SyntaxAnalyzer:
 
     def pretty_print(self):
         print("\nSyntax analyzer result:")
-        self.tree.show(reverse=True, line_type="ascii-exr")
+        self.tree.show(reverse=False, line_type="ascii-exr")
         for error in self.errors:
             print(error)
 
@@ -159,8 +163,6 @@ class SyntaxAnalyzer:
             self.expect(',')
             self.variable_identifier()
             self.identifiers_list(scan=False)
-        else:
-            return
 
     def attributes_list(self):
         possible_types = ['signal', 'complex', 'integer',
@@ -181,7 +183,7 @@ class SyntaxAnalyzer:
         elif self.lexeme.value not in possible_types:
             self.error("Wrong variable type!")
         else:
-            return self.lexeme.value
+            return self.lexeme
 
     def ranges_list(self):
         if self.lexeme != ",":
@@ -291,7 +293,7 @@ class SyntaxAnalyzer:
         self.identifier(scan=False)
 
     def identifier(self):
-        result = self.lexeme.value
+        result = self.lexeme
         self.lexeme = self.lexemas.pop(0)
         return result
 
@@ -310,12 +312,11 @@ class SyntaxAnalyzer:
             return "<empty>"
 
     def unsigned_integer(self):
-        result = self.lexeme.value
+        result = self.lexeme
         self.lexeme = self.lexemas.pop(0)
         return result
 
     def sign(self):
         if self.lexeme != '-' and self.lexeme != '+':
             return "<empty>"
-        result = self.lexeme.value
-        return result
+        return self.lexeme

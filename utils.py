@@ -28,6 +28,9 @@ class Lexeme:
     def __repr__(self):
         return self.value
 
+    def __hash__(self):
+        return hash(self.value)
+
 
 class Error:
     __slots__ = ["text", "row", "column", "type"]
