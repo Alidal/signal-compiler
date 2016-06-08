@@ -11,4 +11,4 @@ if __name__ == "__main__":
     syntaxer.pretty_print()
     code_generator = CodeGenerator(lexer.identifiers, lexer.constants)
     code_generator.walk(syntaxer.tree)
-    print(code_generator.stack)
+    print(code_generator.program)

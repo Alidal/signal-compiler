@@ -1,7 +1,6 @@
 import uuid
 from utils import Error, SyntaxAnalizerError
 from treelib import Tree
-from tables import keywords_table
 
 
 def syntax_tree_node(func, self):
@@ -17,8 +16,6 @@ def syntax_tree_node(func, self):
         # Add node to syntax tree
         node_name = func.__name__
         node_id = str(uuid.uuid1())
-        if self.lexeme.value in keywords_table:
-            node_name += " (%s)" % self.lexeme.value.upper()
 
         if not self.branch:
             self.tree.create_node(node_name, node_id, data=self.lexeme)
@@ -53,7 +50,7 @@ class SyntaxAnalyzer:
 
     def pretty_print(self):
         print("\nSyntax analyzer result:")
-        self.tree.show(reverse=False, line_type="ascii-exr")
+        self.tree.show(reverse=False)
         for error in self.errors:
             print(error)
 
@@ -178,15 +175,15 @@ class SyntaxAnalyzer:
         # <range>
         if self.lexeme == "[":
             self.range()
-            self.ranges_list()
             self.expect("]")
+            self.ranges_list()
         elif self.lexeme.value not in possible_types:
             self.error("Wrong variable type!")
         else:
             return self.lexeme
 
     def ranges_list(self):
-        if self.lexeme != ",":
+        if self.lexeme != "[":
             return "<empty>"
         self.range()
         self.ranges_list()
