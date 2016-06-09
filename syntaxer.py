@@ -170,13 +170,15 @@ class SyntaxAnalyzer:
         self.attributes_list()
 
     def attribute(self):
-        possible_types = ['signal', 'complex', 'integer',
-                          'float', 'blockfloat', 'ext']
+        possible_types = ['complex', 'integer', 'float',
+                          'blockfloat']
         # <range>
         if self.lexeme == "[":
             self.range()
             self.expect("]")
             self.ranges_list()
+        elif self.lexeme == "signal":
+            return self.lexeme.value + " " + self.lexemas.pop(0).value
         elif self.lexeme.value not in possible_types:
             self.error("Wrong variable type!")
         else:
@@ -250,9 +252,12 @@ class SyntaxAnalyzer:
     def statement(self):
         self.expect("link")
         self.variable_identifier()
-
+        self.type(scan=False)
         self.unsigned_integer()
         self.expect(";")
+
+    def type(self):
+        return self.lexeme
 
     def complex_constant(self):
         self.expect("'")
@@ -279,6 +284,7 @@ class SyntaxAnalyzer:
             result += self.lexeme.value
             self.lexeme = self.lexemas.pop(0)
         return result
+
     def constant_identifier(self):
         self.identifier(scan=False)
 
