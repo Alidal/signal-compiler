@@ -210,7 +210,7 @@ class SyntaxAnalyzer:
         self.function_identifier(scan=False)
         self.expect("=")
         self.expression()
-        self.function_characteristic()
+        self.function_characteristic(scan=False)
         self.expect(";")
 
     def function_characteristic(self):
@@ -274,8 +274,11 @@ class SyntaxAnalyzer:
         self.expression(scan=False)
 
     def expression(self):
-        return
-
+        result = ""
+        while self.lexeme != '\\':
+            result += self.lexeme.value
+            self.lexeme = self.lexemas.pop(0)
+        return result
     def constant_identifier(self):
         self.identifier(scan=False)
 
